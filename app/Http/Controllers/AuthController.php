@@ -13,25 +13,25 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $validatedData = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => 'required|max:255|alpha',
             'password' => 'required|min:6|alpha_num',
             'emailId' => 'required|email'
         ]);
 
-        if($validatedData->fails())
+        if($validator->fails())
         {
-            $failedRules = $validatedData->failed();
+            $failedRules = $validator->errors();
 
             $jsonResponse = [
                 'code' => 400,
                 'msg' => 'Request cannot be validated!',
-                'details' => array()
+                'data' => array()
             ];
 
-            array_push($jsonResponse, $failedRules);
+            array_push($jsonResponse["data"], $failedRules);
 
-            return response()->json($jsonResponse);
+            return response()->json($jsonResponse, 400);
         }
 
         $hashedPassword = Hash::make($request->password);
@@ -48,67 +48,66 @@ class AuthController extends Controller
 
         $jsonResponse = [
             'code' => 200,
-            'token' => $userToken,
-            'msg' => 'Registered'
+            'token' => $userToken->accessToken,
+            'data' => 'Registered'
         ];
 
-        return response()->json($jsonResponse);
+        return response()->json($jsonResponse, 200);
     }
     
     public function login(Request $request)
     {
-        $validatedData = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'password' => 'required|min:6|alpha_num',
             'emailId' => 'required|email'
         ]);
 
-        if($validatedData->fails())
+        if($validator->fails())
         {
-            $failedRules = $validatedData->failed();
+            $failedRules = $validator->errors();
 
             $jsonResponse = [
                 'code' => 400,
                 'msg' => 'Request cannot be validated!',
-                'details' => array()
+                'data' => array()
             ];
 
-            array_push($jsonResponse, $failedRules);
+            array_push($jsonResponse["data"], $failedRules);
 
-            return response()->json($jsonResponse);
+            return response()->json($jsonResponse, 400);
         }
 
-        $user = User::select()->where('email', $request->emailId)->get();
+        $userFound = auth()->attempt(['email' => $request->emailId, 'password' => $request->password]);
 
-        $user = $user[0];
-
-        if(empty($user))
+        if(!$userFound)
         {
             $jsonResponse = [
-                'code' => 400,
-                'msg' => 'No such record exists!'
+                'code' => 401,
+                'msg' => 'Login Failed!',
+                'data' => 'Wrong credentials entered'
             ];
 
-            return response()->json($jsonResponse);
+            return response()->json($jsonResponse, 401);
         }
+
+        $user = User::where('email', $request->emailId)->first();
         
-        $hashedPassword = Hash::make($request->password);
-
-        if(!strcmp($user["password"], $hashedPassword))
-        {
-            $jsonResponse = [
-                'code' => 400,
-                'msg' => 'Password didn\'t Matched!'
-            ];
-
-            return response()->json($jsonResponse);
-        }
+        $userToken = $user->createToken('Personal Access Token');
 
         $jsonResponse = [
             'code' => 200,
+            'token' => $userToken->accessToken,
             'msg' => 'Password Matched!'
         ];
 
-        return response()->json($jsonResponse);
+        return response()->json($jsonResponse, 200);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        Mail::to('batman@batcave.io')->send(new ResetPassword);
+
+        return view('email');
     }
 }
 

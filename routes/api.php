@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use App\Mail\ResetPassword;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,10 +15,11 @@ use Illuminate\Http\Request;
 */
 
 
-
 Route::post('/register', 'AuthController@register')->name('register');
 
-Route::post('/login', 'AuthController@login');
+Route::post('/login', 'AuthController@login')->name('login');
+
+Route::post('/reset', 'AuthController@resetPassword')->name('reset');
 
 Route::group(['middleware' => 'auth:api'], function(){
     
@@ -25,9 +27,13 @@ Route::group(['middleware' => 'auth:api'], function(){
     
     Route::post('/new', 'StudentController@insertNewRecord')->name('new.insertRecord');
 
+    Route::get('/edit/{id}', 'StudentController@getEditId');
+
     Route::post('/edit', 'StudentController@editRecord')->name('edit.editRecord');
 
-    Route::post('/delete', 'StudentController@deleteRecord')->name('delete.deleteRecord');
+    Route::get('/delete/{id}', 'StudentController@deleteRecord')->name('delete.deleteRecord');
+
+    Route::get('/logout', 'StudentController@logout');
 
 });
 

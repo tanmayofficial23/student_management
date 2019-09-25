@@ -26,6 +26,7 @@ class StudentController extends Controller
 
         $jsonResponse = [
             'code' => 200,
+            'tableHeaders' => $tableHeaders,
             'data' => array()
         ];
 
@@ -34,7 +35,7 @@ class StudentController extends Controller
             array_push($jsonResponse['data'], $data);
         }
 
-        return response()->json($jsonResponse);
+        return response()->json($jsonResponse, 200);
 
         // return view('/homePage', [
         //     'header' => $tableHeaders,
@@ -44,41 +45,32 @@ class StudentController extends Controller
     
     public function insertNewRecord(Request $request)
     {
+        $user = auth()->user();
+
         $student = new Student;
         
         $student_course = new Student_Course;
 
-        if(empty($request->name) || empty($request->emailId) || empty($request->phoneNo) || empty($request->courses))
-        {
-            $jsonResponse = [
-                'code' => 400,
-                'msg' => 'All fields are mandatory!',
-                'details' => array()
-            ];
-
-            return response()->json($jsonResponse);
-        }
-
-        $validatedData = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => 'required|max:255|alpha',
             'emailId' => 'required|email',
-            'phoneNo' => 'required|numeric',
+            'phoneNo' => 'required|numeric|digits:10',
             'courses' => 'required|array'
         ]);
 
-        if($validatedData->fails())
+        if($validator->fails())
         {
-            $failedRules = $validatedData->failed();
+            $failedRules = $validator->errors();
 
             $jsonResponse = [
                 'code' => 400,
                 'msg' => 'Request cannot be validated!',
-                'details' => array()
+                'data' => array()
             ];
 
-            array_push($jsonResponse, $failedRules);
+            array_push($jsonResponse["data"], $failedRules);
 
-            return response()->json($jsonResponse);
+            return response()->json($jsonResponse, 400);
         }
 
         $student->name = $request->name;
@@ -121,21 +113,56 @@ class StudentController extends Controller
         array_push($jsonjsonResponse['data'], $request->phoneNo);
         array_push($jsonjsonResponse['data'], $courseIds);
 
-        return response()->json($jsonjsonResponse);
+        return response()->json($jsonjsonResponse, 200);
     }
 
     public function getEditId(Request $request, $id)
     {
+        $user = auth()->user();
+        
         if(empty($id))
         {
-            return view('/errorPage', [
-                'msg' => "No ID found"
-            ]);
+            $jsonResponse = [
+                'code' => 400,
+                'data' => 'No ID mentioned!'
+            ];
+
+            return response()->json($jsonResponse, 400);
         }
 
-        return view('/editPage', [
-            'id' => $id
-        ]);
+        $student = Student::find($id);
+
+        if(empty($student))
+        {
+            $jsonResponse = [
+                'code' => 400,
+                'data' => 'No record found for this ID!'
+            ];
+
+            return response()->json($jsonResponse, 400);
+        }
+
+        $coursesSelected = Student_Course::where('student_id', $id)->get()->all();
+
+        $selectedCourses = [];
+
+        foreach($coursesSelected as $course)
+        {
+            $courses = Course::where('id', $course->course_id)->get();
+            
+            array_push($selectedCourses, $courses[0]->name);
+        }
+
+        $jsonResponse = [
+            'code' => 200,
+            'msg' => 'Record found!',
+            'data' => [
+                'studentDetails' => $student,
+                'selectedCourses' => $selectedCourses
+            ]
+        ];
+
+        return response()->json($jsonResponse, 200);
     }
 
     public function editRecord(Request $request)
@@ -147,43 +174,32 @@ class StudentController extends Controller
             $jsonResponse = [
                 'code' => 400,
                 'msg' => 'No record found for this ID!',
-                'details' => array()
+                'data' => array()
             ];
 
-            return response()->json($jsonResponse);
+            return response()->json($jsonResponse, 400);
         }
 
-        if(empty($request->name) || empty($request->emailId) || empty($request->phoneNo) || empty($request->courses))
-        {
-            $jsonResponse = [
-                'code' => 400,
-                'msg' => 'All fields are mandatory!',
-                'details' => array()
-            ];
-
-            return response()->json($jsonResponse);
-        }
-
-        $validatedData = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => 'required|max:255|alpha',
             'emailId' => 'required|email',
-            'phoneNo' => 'required|numeric',
+            'phoneNo' => 'required|numeric|digits:10',
             'courses' => 'required|array'
         ]);
 
-        if($validatedData->fails())
+        if($validator->fails())
         {
-            $failedRules = $validatedData->failed();
+            $failedRules = $validator->errors();
 
             $jsonResponse = [
                 'code' => 400,
                 'msg' => 'Request cannot be validated!',
-                'details' => array()
+                'data' => array()
             ];
 
-            array_push($jsonResponse, $failedRules);
+            array_push($jsonResponse["data"], $failedRules);
 
-            return response()->json($jsonResponse);
+            return response()->json($jsonResponse, 400);
         }
 
         $student->name = $request->name;
@@ -229,51 +245,55 @@ class StudentController extends Controller
         array_push($jsonjsonResponse['data'], $request->phoneNo);
         array_push($jsonjsonResponse['data'], $request->courses);
 
-        return response()->json($jsonjsonResponse);
+        return response()->json($jsonjsonResponse, 200);
 
         // return view('/editPageConfirm', [
         //     'id' => $request->id
         // ]);
     }
 
-    public function confirmDelete(Request $request, $id)
+    public function deleteRecord($id)
     {
-        return view('/deletePageConfirm', [
-            'id' => $id
-        ]);
-    }
-
-    public function deleteRecord(Request $request)
-    {
-        $student = Student::find($request->id);
+        $student = Student::find($id);
 
         if(empty($student))
         {
             $jsonResponse = [
                 'code' => 400,
-                'msg' => 'No record found for this ID!',
-                'details' => array()
+                'msg' => 'No record found for this ID!'
             ];
 
-            return response()->json($jsonResponse);
+            return response()->json($jsonResponse, 400);
         }
         
-        Student_Course::where('student_id', $request->id)->delete();
+        Student_Course::where('student_id', $id)->delete();
 
-        Student::where('id', $request->id)->delete();
+        Student::where('id', $id)->delete();
 
         $jsonResponse = [
             'code' => 200,
             'msg' => "Record Deleted",
-            'data' => array()
+            'data' => $id
         ];
 
-        array_push($jsonResponse['data'], $request->id);
-
-        return response()->json($jsonResponse);
+        return response()->json($jsonResponse, 200);
 
         // return view('/deletedRecord', [
         //     'id' => $request->id
         // ]);
+    }
+
+    public function logout()
+    {
+        $token = request()->user()->token();
+
+        $token->revoke();
+
+        $jsonResponse = [
+            'code' => 200,
+            'data' => 'User has logged off successfully!'
+        ];
+
+        return response()->json($jsonResponse, 200);
     }
 }
