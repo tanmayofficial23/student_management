@@ -51,10 +51,10 @@
                     ?>
 
                     <tr>
-                        <td>{{$student->id}}</td>
-                        <td>{{$student->name}}</td>
-                        <td>{{$student->email_id}}</td>
-                        <td>{{$student->phone_no}}</td>
+                        <td>{{ $student->id }}</td>
+                        <td>{{ $student->name }}</td>
+                        <td>{{ $student->email_id }}</td>
+                        <td>{{ $student->phone_no }}</td>
                         <td>
                             <a href="{{ url('/'.$id.'/edit') }}">Edit</a>
                             <a href="{{ url('/'.$id.'/delete') }}" id="deleteRecord">Delete</a>

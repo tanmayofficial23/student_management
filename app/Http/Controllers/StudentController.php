@@ -167,6 +167,8 @@ class StudentController extends Controller
 
     public function editRecord(Request $request)
     {
+        $user = auth()->user();
+        
         $student = Student::find($request->id);
 
         if(empty($student))
@@ -254,6 +256,8 @@ class StudentController extends Controller
 
     public function deleteRecord($id)
     {
+        $user = auth()->user();
+        
         $student = Student::find($id);
 
         if(empty($student))
@@ -285,6 +289,8 @@ class StudentController extends Controller
 
     public function logout()
     {
+        $user = auth()->user();
+        
         $token = request()->user()->token();
 
         $token->revoke();

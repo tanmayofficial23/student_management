@@ -17,9 +17,13 @@ use App\Mail\ResetPassword;
 
 Route::post('/register', 'AuthController@register')->name('register');
 
+Route::post('/verify', 'AuthController@emailVerification');
+
 Route::post('/login', 'AuthController@login')->name('login');
 
-Route::post('/reset', 'AuthController@resetPassword')->name('reset');
+Route::post('/resetmail', 'AuthController@generateResetLink');
+
+Route::post('/setnewpass', 'AuthController@resetPassword');
 
 Route::group(['middleware' => 'auth:api'], function(){
     

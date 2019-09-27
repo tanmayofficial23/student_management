@@ -1,21 +1,12 @@
-<html>
 
-    <head>
-        
-        <title>Mailing</title>
+@component('mail::message')
 
-    </head>
+{{ $msg }}
 
-    <body>
-        
-        <center>
+@component('mail::button', ['url' => $url])
+{{ $buttonText }}
+@endcomponent
 
-            <h1>Mailing Service</h1>
-
-            <h3>From Controller : {{ $data }}</h3>
-
-        </center>
-
-    </body>
-
-</html>
+Thanks,<br>
+{{ config('app.name') }}
+@endcomponent

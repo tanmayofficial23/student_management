@@ -7,20 +7,25 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class ResetPassword extends Mailable
+class VerificationEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    
+    public $msg;
+    public $url;
+    public $buttonText;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct($msg, $url, $buttonText)
     {
-        //
+        $this->msg = $msg;
+        $this->url = $url;
+
+        $this->buttonText = $buttonText;
     }
 
     /**
@@ -30,11 +35,8 @@ class ResetPassword extends Mailable
      */
     public function build()
     {
-
-        return view('email')->with('Count', 23)->subject('TestMail');
-
-        // $jsonResponse = 
-
-        // return response()->json($jsonResponse);
+        return $this->markdown('email');
     }
+
+    
 }
