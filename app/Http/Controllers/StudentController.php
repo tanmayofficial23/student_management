@@ -37,23 +37,15 @@ class StudentController extends Controller
 
         return response()->json($jsonResponse, 200);
 
-        // return view('/homePage', [
-        //     'header' => $tableHeaders,
-        //     'dataFromDB' => $dataFromDB
-        // ]);
     }
     
     public function insertNewRecord(Request $request)
     {
         $user = auth()->user();
-
-        $student = new Student;
         
-        $student_course = new Student_Course;
-
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:255|alpha',
-            'emailId' => 'required|email',
+            'emailId' => 'required|email|unique:students,email_id',
             'phoneNo' => 'required|numeric|digits:10',
             'courses' => 'required|array'
         ]);
@@ -63,74 +55,55 @@ class StudentController extends Controller
             $failedRules = $validator->errors();
 
             $jsonResponse = [
-                'code' => 400,
+                'code' => 422,
                 'msg' => 'Request cannot be validated!',
                 'data' => array()
             ];
 
             array_push($jsonResponse["data"], $failedRules);
 
-            return response()->json($jsonResponse, 400);
+            return response()->json($jsonResponse, 422);
         }
 
-        $student->name = $request->name;
-        $student->email_id = $request->emailId;
-        $student->phone_no = $request->phoneNo;
+        $student = Student::create([
+            'name' => $request->name,
+            'email_id' => $request->emailId,
+            'phone_no' => $request->phoneNo
+        ]);
 
-        $coursesSelected = array($request->courses);
+        $coursesSelected = $request->courses;
 
-        $student->save();
         $insertedId = $student->id;
 
         $courseIds = array();
 
-        foreach($coursesSelected[0] as $course)
+        foreach($coursesSelected as $course)
         {
             $courseId = Course::select('id')->where('name', $course)->get();
 
             $courseIds[] = $courseId[0]["id"];
         }
 
-        $dataToBeUpdated = array();
+        Student::find($insertedId)->courses()->sync($courseIds);
 
-        foreach($courseIds as $courseId)
-        {
-            $student_course::insert([
-                'student_id' => $insertedId,
-                'course_id' => $courseId
-            ]);
-        }
-
-        $jsonjsonResponse = [
+        $jsonResponse = [
             'code' => 200,
             'msg' => 'New record entered!',
             'data' => array()
         ];
 
-        array_push($jsonjsonResponse['data'], $insertedId);
-        array_push($jsonjsonResponse['data'], $request->name);
-        array_push($jsonjsonResponse['data'], $request->emailId);
-        array_push($jsonjsonResponse['data'], $request->phoneNo);
-        array_push($jsonjsonResponse['data'], $courseIds);
+        array_push($jsonResponse['data'], $insertedId);
+        array_push($jsonResponse['data'], $request->name);
+        array_push($jsonResponse['data'], $request->emailId);
+        array_push($jsonResponse['data'], $request->phoneNo);
+        array_push($jsonResponse['data'], $courseIds);
 
-        return response()->json($jsonjsonResponse, 200);
+        return response()->json($jsonResponse, 200);
     }
 
-    public function getEditId(Request $request, $id)
+    public function get(Request $request, $id)
     {
-        $user = auth()->user();
-        
-        if(empty($id))
-        {
-            $jsonResponse = [
-                'code' => 400,
-                'data' => 'No ID mentioned!'
-            ];
-
-            return response()->json($jsonResponse, 400);
-        }
-
-        $student = Student::find($id);
+        $student = Student::with('courses')->findOrFail($id);
 
         if(empty($student))
         {
@@ -169,22 +142,9 @@ class StudentController extends Controller
     {
         $user = auth()->user();
         
-        $student = Student::find($request->id);
-
-        if(empty($student))
-        {
-            $jsonResponse = [
-                'code' => 400,
-                'msg' => 'No record found for this ID!',
-                'data' => array()
-            ];
-
-            return response()->json($jsonResponse, 400);
-        }
-
         $validator = Validator::make($request->all(), [
             'name' => 'required|max:255|alpha',
-            'emailId' => 'required|email',
+            'emailId' => 'required|email|unique:students,email_id',
             'phoneNo' => 'required|numeric|digits:10',
             'courses' => 'required|array'
         ]);
@@ -194,21 +154,26 @@ class StudentController extends Controller
             $failedRules = $validator->errors();
 
             $jsonResponse = [
-                'code' => 400,
+                'code' => 422,
                 'msg' => 'Request cannot be validated!',
                 'data' => array()
             ];
 
             array_push($jsonResponse["data"], $failedRules);
 
+            return response()->json($jsonResponse, 422);
+        }
+
+        if(!Student::where('id', $request->id)->update([ 'name' => $request->name, 'email_id' => $request->emailId, 'phone_no' => $request->phoneNo]))
+        {
+            $jsonResponse = [
+                'code' => 400,
+                'error' => 'No record is found for the ID provided.'
+            ];
+
             return response()->json($jsonResponse, 400);
         }
 
-        $student->name = $request->name;
-        $student->email_id = $request->emailId;
-        $student->phone_no = $request->phoneNo;
-
-        $student->save();
         $coursesSelected = $request->courses;
 
         $courseIds = array();
@@ -220,20 +185,7 @@ class StudentController extends Controller
             $courseIds[] = $courseId[0]["id"];
         }
 
-        //dd($courseIds);
-
-        foreach($courseIds as $courseId)
-        {
-            Student_Course::where('student_id', $request->id)->delete();
-        }
-
-        foreach($courseIds as $courseId)
-        {
-            Student_Course::insert([
-                'student_id' => $request->id,
-                'course_id' => $courseId
-            ]);
-        }
+        Student::find($request->id)->courses()->sync($courseIds);
 
         $jsonjsonResponse = [
             'code' => 200,
@@ -249,9 +201,6 @@ class StudentController extends Controller
 
         return response()->json($jsonjsonResponse, 200);
 
-        // return view('/editPageConfirm', [
-        //     'id' => $request->id
-        // ]);
     }
 
     public function deleteRecord($id)
@@ -282,9 +231,6 @@ class StudentController extends Controller
 
         return response()->json($jsonResponse, 200);
 
-        // return view('/deletedRecord', [
-        //     'id' => $request->id
-        // ]);
     }
 
     public function logout()

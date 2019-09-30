@@ -12,7 +12,7 @@
 
         <br/><br/><br/>
 
-        <form action="{{ route('delete.deleteRecord') }}" method="post">
+        <form action="{{ route('students.delete') }}" method="post">
 
         {{ csrf_field() }}
 

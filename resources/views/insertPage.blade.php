@@ -14,7 +14,7 @@
 
         <br/><br/><br/><br/>
 
-        <form action="{{ route('new.insertRecord')}}" method="post">
+        <form action="{{ route('students.create')}}" method="post">
 
         {{ csrf_field()}}
         

@@ -1,8 +1,5 @@
 <?php
 
-use Illuminate\Http\Request;
-use App\Mail\ResetPassword;
-
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -21,21 +18,21 @@ Route::post('/verify', 'AuthController@emailVerification');
 
 Route::post('/login', 'AuthController@login')->name('login');
 
-Route::post('/resetmail', 'AuthController@generateResetLink');
+Route::post('/resetmail', 'AuthController@generateResetPasswordLink');
 
 Route::post('/setnewpass', 'AuthController@resetPassword');
 
 Route::group(['middleware' => 'auth:api'], function(){
     
-    Route::get('/show', 'StudentController@showAllRecords');
+    Route::get('/students/index', 'StudentController@showAllRecords');
     
-    Route::post('/new', 'StudentController@insertNewRecord')->name('new.insertRecord');
+    Route::post('/students/create', 'StudentController@insertNewRecord')->name('students.create');
 
-    Route::get('/edit/{id}', 'StudentController@getEditId');
+    Route::get('/students/{id}', 'StudentController@get');
 
-    Route::post('/edit', 'StudentController@editRecord')->name('edit.editRecord');
+    Route::post('/students/edit', 'StudentController@editRecord')->name('students.edit');
 
-    Route::get('/delete/{id}', 'StudentController@deleteRecord')->name('delete.deleteRecord');
+    Route::get('/students/delete/{id}', 'StudentController@deleteRecord')->name('students.delete');
 
     Route::get('/logout', 'StudentController@logout');
 

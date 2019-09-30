@@ -7,7 +7,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class VerificationEmail extends Mailable
+class PasswordResetMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -20,7 +20,7 @@ class VerificationEmail extends Mailable
      */
     public function __construct($token)
     {
-        $this->url = env('BASE_URL').'emailverify?token='.$token;
+        $this->url = env('BASE_URL').'reset?token='.$token;
     }
 
     /**
@@ -30,8 +30,6 @@ class VerificationEmail extends Mailable
      */
     public function build()
     {
-        return $this->markdown('mail.VerificationEmail');
+        return $this->markdown('mail.ResetPasswordEmail');
     }
-
-    
 }

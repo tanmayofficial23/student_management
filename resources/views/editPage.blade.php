@@ -16,7 +16,7 @@
         
         <br/>
 
-        <form action="{{ route('edit.editRecord') }}" method="post">
+        <form action="{{ route('students.edit') }}" method="post">
 
         {{ csrf_field()}}
 
